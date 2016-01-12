@@ -1,0 +1,65 @@
+---
+- hosts: all
+
+  vars_files:
+    - ../config.yml
+
+  pre_tasks:
+    - include: tasks/init-debian.yml
+      when: ansible_os_family == 'Debian'
+
+  roles:
+    # Essential roles.
+    - virtualenv.firewall
+    - virtualenv.git
+    - virtualenv.postfix
+    - { role: virtualenv.apache, when: openhackvm_webserver == 'apache' }
+    - { role: virtualenv.nginx, when: openhackvm_webserver == 'nginx' }
+    - virtualenv.mysql
+    - virtualenv.php
+    - virtualenv.php-pecl
+    - virtualenv.php-mysql
+    - virtualenv.composer
+    - virtualenv.drush
+    - { role: virtualenv.drupal-console, when: drupal_major_version > 7 }
+
+    # Conditionally-installed roles.
+    - { role: virtualenv.memcached, when: '"memcached" in installed_extras' }
+    - { role: virtualenv.php-memcached, when: '"memcached" in installed_extras' }
+    - { role: virtualenv.php-xdebug, when: '"xdebug" in installed_extras' }
+    - { role: virtualenv.php-xhprof, when: '"xhprof" in installed_extras' }
+    - { role: virtualenv.adminer, when: '"adminer" in installed_extras' }
+    - { role: virtualenv.pimpmylog, when: '"pimpmylog" in installed_extras' }
+    - { role: virtualenv.daemonize, when: '"mailhog" in installed_extras' }
+    - { role: virtualenv.mailhog, when: '"mailhog" in installed_extras' }
+    - { role: virtualenv.nodejs, when: '"nodejs" in installed_extras' }
+    - { role: virtualenv.ruby, when: '"ruby" in installed_extras' }
+    - { role: virtualenv.java, when: '"solr" in installed_extras or "selenium" in installed_extras' }
+    - { role: virtualenv.selenium, when: '"selenium" in installed_extras' }
+    - { role: virtualenv.solr, when: '"solr" in installed_extras' }
+    - { role: virtualenv.varnish, when: '"varnish" in installed_extras' }
+
+    # Roles for security and stability on production.
+    - { role: virtualenv.security, when: extra_security_enabled }
+
+  tasks:
+    - name: Check if Drupal is already set up.
+      stat: "path={{ drupal_core_path }}/index.php"
+      register: drupal_site
+
+    - include: tasks/sshd.yml
+    - include: tasks/extras.yml
+    - include: tasks/www.yml
+    - include: tasks/apparmor.yml
+      when: ansible_os_family == 'Debian'
+
+    # Build makefile if configured.
+    - include: tasks/build-makefile.yml
+      when: build_makefile
+
+    # Install site if configured.
+    - include: tasks/install-site.yml
+      when: install_site
+
+    - include: tasks/drush-aliases.yml
+    - include: tasks/cron.yml

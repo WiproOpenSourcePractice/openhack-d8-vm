@@ -1,0 +1,12 @@
+site_name: Open Hack Documentation
+
+repo_url: https://github.com/WiproOpenSourcePractice/openhack-d8-vm
+site_description: 'Openhack-VM - A VM for Openhack development, built with Vagrant + Ansible'
+theme: readthedocs
+
+markdown_extensions:
+  - toc:
+      permalink: True
+
+pages:
+  - Home: 'index.md'
